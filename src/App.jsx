@@ -10,7 +10,7 @@ import BugTrackerManager from './components/bugs/BugTrackerManager';
 import Settings from './components/Settings/Settings';
 import { FileText, CheckSquare, Bug, AlertCircle } from 'lucide-react';
 
-const DashboardView = () => {
+const DashboardView = ({ showDescriptions, showQuickStart }) => {
   const { scenarios, testCases, bugs } = useData();
   const stats = [
     { title: 'Total Scenarios', value: scenarios.length, icon: FileText, color: 'var(--color-primary)', trend: 0 },
@@ -23,7 +23,9 @@ const DashboardView = () => {
     <>
       <div style={{ marginBottom: '32px' }}>
         <h2 style={{ fontSize: '2rem', fontWeight: 'bold' }}>Dashboard</h2>
-        <p style={{ color: 'var(--color-text-muted)' }}>Overview of your software testing project.</p>
+        {showDescriptions && (
+          <p style={{ color: 'var(--color-text-muted)' }}>Overview of your software testing project.</p>
+        )}
       </div>
 
       <div className="grid grid-cols-4 gap-4" style={{ marginBottom: '32px' }}>
@@ -34,7 +36,7 @@ const DashboardView = () => {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         <QuickActions />
-        <QuickStart />
+        {showQuickStart && <QuickStart />}
       </div>
     </>
   );
@@ -42,36 +44,51 @@ const DashboardView = () => {
 
 function App() {
   const [activeView, setActiveView] = useState('Dashboard');
-  const [darkMode, setDarkMode] = useState(() => {
-    const saved = localStorage.getItem('darkMode');
-    return saved === 'true';
+  const [theme, setTheme] = useState(() => {
+    return localStorage.getItem('testhub-theme') || 'light';
+  });
+  const [showDescriptions, setShowDescriptions] = useState(() => {
+    const saved = localStorage.getItem('testhub-showDescriptions');
+    return saved === null ? true : saved === 'true';
+  });
+  const [showQuickStart, setShowQuickStart] = useState(() => {
+    const saved = localStorage.getItem('testhub-showQuickStart');
+    return saved === null ? true : saved === 'true';
   });
 
   useEffect(() => {
-    if (darkMode) {
-      document.documentElement.setAttribute('data-theme', 'dark');
-    } else {
+    if (theme === 'light') {
       document.documentElement.removeAttribute('data-theme');
+    } else {
+      document.documentElement.setAttribute('data-theme', theme);
     }
-    localStorage.setItem('darkMode', darkMode);
-  }, [darkMode]);
+    localStorage.setItem('testhub-theme', theme);
+  }, [theme]);
 
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-  };
+  useEffect(() => {
+    localStorage.setItem('testhub-showDescriptions', showDescriptions);
+  }, [showDescriptions]);
+
+  useEffect(() => {
+    localStorage.setItem('testhub-showQuickStart', showQuickStart);
+  }, [showQuickStart]);
 
   const renderContent = () => {
     switch (activeView) {
       case 'Dashboard':
-        return <DashboardView />;
+        return <DashboardView showDescriptions={showDescriptions} showQuickStart={showQuickStart} />;
       case 'Scenarios':
-        return <ScenarioManager />;
+        return <ScenarioManager showDescriptions={showDescriptions} />;
       case 'Test Cases':
-        return <TestCaseManager />;
+        return <TestCaseManager showDescriptions={showDescriptions} />;
       case 'Bug Tracker':
-        return <BugTrackerManager />;
+        return <BugTrackerManager showDescriptions={showDescriptions} />;
       case 'Settings':
-        return <Settings darkMode={darkMode} toggleDarkMode={toggleDarkMode} />;
+        return <Settings
+          theme={theme} setTheme={setTheme}
+          showDescriptions={showDescriptions} setShowDescriptions={setShowDescriptions}
+          showQuickStart={showQuickStart} setShowQuickStart={setShowQuickStart}
+        />;
       default:
         return <div><h2>Not Found</h2></div>;
     }
